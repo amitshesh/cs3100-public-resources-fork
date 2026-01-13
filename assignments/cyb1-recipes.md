@@ -4,6 +4,16 @@ sidebar_position: 2
 image: /img/assignments/web/a1.png
 ---
 
+## Update Log
+
+**January 13, 2026:** Indicated that Javadoc should not be written for tests (although you don't need to remove it if you already wrote it).
+
+**January 10, 2026:** Specified that `DECIMAL_PRECISION` constant for `ExactQuantity` and `RangeQuantity` must be set to 3. This allows you to write tests that assume that the precision is 3 decimal places, rather than requiring tests to be aware of the actual precision currently set.
+
+**January 9, 2026:** Clarified that NullAway compiler checks eliminate the need to test for null parameter exceptions on `@NonNull` annotated parameters. You should NOT write tests that verify `IllegalArgumentException` is thrown when null is passed to `@NonNull` parameters—the compiler prevents this at compile-time.
+
+---
+
 ## 1. Overview
 
 Welcome to the **CookYourBooks** project! Over the course of the semester, you'll be building a comprehensive recipe management application that helps users digitize, organize, and work with their recipe collections. This application will eventually support importing recipes from various sources (including OCR from photos), storing them in a structured format, and providing both command-line and graphical interfaces for managing a personal recipe library.
@@ -20,7 +30,7 @@ In this first assignment, you'll lay the foundation by implementing the core dom
 
 **What you'll test:** Write JUnit 5 tests for 5 classes: `ExactQuantityTest`, `FractionalQuantityTest`, `RangeQuantityTest`, `MeasuredIngredientTest`, and `VagueIngredientTest`. **Write tests as you implement each class**—don't wait until the end.
 
-**How you'll be graded:** [50 points for implementation](#821-implementation-correctness-50-points) + [50 points for test quality](#822-test-suite-quality-50-points), minus up to [30 points for code quality issues](#83-manual-grading-subtractive). **Important:** You only receive implementation points for a class if you *also* write tests that catch bugs—see [8.1 Automated Grading Overview](#81-automated-grading-overview) for the full explanation. This isn't just about points: the autograder won't tell you whether your implementation is correct or give you hints until you've written plausible tests, and TAs will follow the same policy. Write tests first to unlock feedback.
+**How you'll be graded:** [88 points for automated checks](#82-automated-grading-point-breakdown-88-points) (implementation + test quality) + [up to 12 points for reflection](#61-reflection-grading), minus up to [30 points for code quality issues](#83-manual-grading-subtractive). **Important:** You only receive implementation points for a class if you *also* write tests that catch bugs—see [8.1 Automated Grading Overview](#81-automated-grading-overview) for the full explanation. This isn't just about points: the autograder won't tell you whether your implementation is correct or give you hints until you've written plausible tests, and TAs will follow the same policy. Write tests first to unlock feedback.
 
 **Key constraints:** [No AI assistance](#3-ai-policy-for-this-assignment) for this assignment. Complete the [Reflection](#6-reflection) questions in `REFLECTION.md`.
 
@@ -51,7 +61,7 @@ This is your opportunity to demonstrate your understanding of fundamental Java c
 As we are unable to enforce this policy, we stress that this policy is a strong guideline, and will not adjust your grade if you use AI to help you with this assignment. We ask that you report any AI usage in the [Reflection](#6-reflection) section of your submission to help us improve the course and this policy.
 
 ## 4. Grading Overview
-This assignment is worth 100 points. A fully automated grading script will be used to add points to your submission, and a manual grading process will be used to deduct points for subjective issues that can not be automatically graded.
+This assignment is worth 100 points total: 88 points from automated grading (implementation correctness and test suite effectiveness), up to 12 points from reflection, minus up to 30 points for code quality issues assessed through manual grading.
 
 A grade of "zero" will be awarded for submissions that do not compile or have code formatting issues. If this is a challenge for you, please reach out to the staff for assistance - we are happy to help make sure that your IDE is configured correctly to automatically flag (and potentially fix) these issues.
 
@@ -217,6 +227,8 @@ classDiagram
 ### 5.3 Invariants and Contracts
 Utilize JSpecify's `@NonNull` annotations to express the non-nullness of parameters and return values.
 
+**Important: NullAway and Testing.** This project uses NullAway, a static analysis tool that enforces null-safety at compile time. When a parameter is annotated with `@NonNull`, the compiler will prevent null values from being passed to that parameter. **Therefore, you should NOT write tests that verify `IllegalArgumentException` is thrown when null is passed to `@NonNull` parameters**—the compiler already guarantees this cannot happen. Focus your testing efforts on validating the other preconditions (e.g., positive values, non-blank strings, valid ranges) and the behavior of your methods.
+
 Java Enums are a special type of class that represents a fixed set of constants. They are declared using the `enum` keyword. To learn more about Enums, you should refer directly to [the Java documentation](https://docs.oracle.com/javase/tutorial/java/javaOO/enum.html).
 
 #### 5.3.1 `UnitSystem` (enum)
@@ -267,9 +279,9 @@ An abstract base class representing a quantity with an associated unit.
 
 **Constructor:**
 - `protected Quantity(@NonNull Unit unit)`
-  - **Preconditions:** `unit` must not be null
-  - **Throws:** `IllegalArgumentException` if unit is null
+  - **Preconditions:** `unit` must not be null (enforced by NullAway at compile-time)
   - **Postconditions:** Creates a quantity with the given unit
+  - **Note:** Because `unit` is annotated with `@NonNull`, NullAway ensures null cannot be passed at compile-time, so no runtime null check or exception throwing is needed
 
 **Methods:**
 - `public Unit getUnit()` - Returns the unit (never null)
@@ -284,12 +296,12 @@ Represents a precise decimal quantity.
 - `public ExactQuantity(double amount, @NonNull Unit unit)`
   - **Preconditions:**
     - `amount` must be strictly positive (> 0.0)
-    - `unit` must not be null (validated by superclass)
-  - **Throws:** `IllegalArgumentException` if amount is not positive or unit is null
+    - `unit` must not be null (enforced by NullAway at compile-time, validated by superclass)
+  - **Throws:** `IllegalArgumentException` if amount is not positive
   - **Postconditions:** Creates an exact quantity with the given amount and unit
 
 **Constants:**
-- `public static final int DECIMAL_PRECISION` - The maximum number of decimal places to display when formatting quantities (you should choose a reasonable value, such as 2 or 3)
+- `public static final int DECIMAL_PRECISION = 3` - The maximum number of decimal places to display when formatting quantities (must be set to 3)
 
 **Methods:**
 - `public double getAmount()` - Returns the amount (always > 0.0)
@@ -301,7 +313,7 @@ Represents a precise decimal quantity.
   - Note: Use exact comparison `amount == 1.0` for determining singular/plural (before formatting for display)
 
 **Testing (`ExactQuantityTest.java`):**
-Write tests to verify constructor validation (consider what values should be valid vs. invalid based on the preconditions), the `toDecimal()` calculation, and the `toString()` formatting rules including singular/plural logic. 
+Write tests to verify constructor validation for the `amount` parameter (consider what values should be valid vs. invalid based on the preconditions—you do NOT need to test null unit since NullAway prevents this at compile-time), the `toDecimal()` calculation, and the `toString()` formatting rules including singular/plural logic. 
 
 #### 5.3.6 `FractionalQuantity` (extends `Quantity`)
 
@@ -314,8 +326,8 @@ Represents a quantity as a mixed number (whole + fraction).
     - `numerator` must be non-negative (>= 0)
     - `denominator` must be positive (> 0)
     - At least one of `whole` or `numerator` must be positive (to ensure total quantity > 0)
-    - `unit` must not be null (validated by superclass)
-  - **Throws:** `IllegalArgumentException` if any precondition is violated
+    - `unit` must not be null (enforced by NullAway at compile-time, validated by superclass)
+  - **Throws:** `IllegalArgumentException` if any precondition is violated (except for null unit, which is prevented by NullAway)
   - **Postconditions:** Creates a fractional quantity with the given parts and unit
   - **Note:** Fractions should not need to reduced to lowest terms.
 
@@ -334,7 +346,7 @@ Represents a quantity as a mixed number (whole + fraction).
     - Otherwise: `"{numerator}/{denominator} {unit.getAbbreviation()}"` (e.g., "1/2 cup")
 
 **Testing (`FractionalQuantityTest.java`):**
-Write tests to verify constructor validation for all three components (whole, numerator, denominator) based on the preconditions. Test the `toDecimal()` calculation and `toString()`. Remember to use a delta when comparing floating-point results.
+Write tests to verify constructor validation for all three numeric components (whole, numerator, denominator) based on the preconditions—you do NOT need to test null unit since NullAway prevents this at compile-time. Test the `toDecimal()` calculation and `toString()`. Remember to use a delta when comparing floating-point results.
 
 #### 5.3.7 `RangeQuantity` (extends `Quantity`)
 
@@ -345,12 +357,12 @@ Represents a range of quantities (e.g., "2-3 cups").
   - **Preconditions:**
     - `min` must be strictly positive (> 0.0)
     - `max` must be strictly greater than min (max > min)
-    - `unit` must not be null (validated by superclass)
-  - **Throws:** `IllegalArgumentException` if any precondition is violated
+    - `unit` must not be null (enforced by NullAway at compile-time, validated by superclass)
+  - **Throws:** `IllegalArgumentException` if any precondition is violated (except for null unit, which is prevented by NullAway)
   - **Postconditions:** Creates a range quantity with the given min, max, and unit
 
 **Constants:**
-- `public static final int DECIMAL_PRECISION` - The maximum number of decimal places to display when formatting quantities (you should choose a reasonable value, such as 2 or 3)
+- `public static final int DECIMAL_PRECISION = 3` - The maximum number of decimal places to display when formatting quantities (must be set to 3)
 
 **Methods:**
 - `public double getMin()` - Returns the minimum amount (always > 0.0)
@@ -361,17 +373,17 @@ Represents a range of quantities (e.g., "2-3 cups").
   - Format: `"{min}-{max} {unit.getPluralAbbreviation()}"` (e.g., "2-3 cups", "100-150 g")
 
 **Testing (`RangeQuantityTest.java`):**
-Write tests to verify constructor validation for the relationship between min and max values based on the preconditions. Test the midpoint calculation in `toDecimal()` and `toString()`.
+Write tests to verify constructor validation for the relationship between min and max values based on the preconditions—you do NOT need to test null unit since NullAway prevents this at compile-time. Test the midpoint calculation in `toDecimal()` and `toString()`.
 
 #### 5.3.8 `Ingredient` (abstract class)
 
 **Constructor:**
 - `protected Ingredient(@NonNull String name, String preparation, String notes)`
-  - **Preconditions:** 
-    - `name` must not be null and must not be blank (empty or whitespace-only)
+  - **Preconditions:**
+    - `name` must not be null (enforced by NullAway at compile-time) and must not be blank (empty or whitespace-only)
     - `preparation` may be null (indicates no special preparation)
     - `notes` may be null (indicates no special notes)
-  - **Throws:** `IllegalArgumentException` if name is null or blank
+  - **Throws:** `IllegalArgumentException` if name is blank (null is prevented by NullAway)
   - **Postconditions:** Creates an ingredient with the given name, preparation, and notes (strings trimmed of leading/trailing whitespace if non-null)
 
 **Methods:**
@@ -385,11 +397,11 @@ Write tests to verify constructor validation for the relationship between min an
 **Constructor:**
 - `public MeasuredIngredient(@NonNull String name, @NonNull Quantity quantity, String preparation, String notes)`
   - **Preconditions:**
-    - `name` must not be null or blank (validated by superclass)
-    - `quantity` must not be null
+    - `name` must not be null (enforced by NullAway at compile-time) or blank (validated by superclass)
+    - `quantity` must not be null (enforced by NullAway at compile-time)
     - `preparation` may be null (validated by superclass)
     - `notes` may be null (validated by superclass)
-  - **Throws:** `IllegalArgumentException` if name is null/blank or quantity is null
+  - **Throws:** `IllegalArgumentException` if name is blank (null parameters are prevented by NullAway)
   - **Postconditions:** Creates a measured ingredient with name, quantity, preparation, and notes
 
 **Methods:**
@@ -406,18 +418,18 @@ Write tests to verify constructor validation for the relationship between min an
 - `public int hashCode()` - Returns hash code based on name (lowercase), quantity, preparation, and notes
 
 **Testing (`MeasuredIngredientTest.java`):**
-Write tests to verify constructor validation for required vs. optional parameters, including string trimming behavior. Test `toString()` formatting with and without preparation.
+Write tests to verify constructor validation for the `name` parameter (blank strings)—you do NOT need to test null `name` or null `quantity` since NullAway prevents this at compile-time. Also test string trimming behavior and `toString()` formatting with and without preparation.
 
 #### 5.3.10 `VagueIngredient` (extends `Ingredient`)
 
 **Constructor:**
 - `public VagueIngredient(@NonNull String name, String description, String preparation, String notes)`
-  - **Preconditions:** 
-    - `name` must not be null or blank (validated by superclass)
+  - **Preconditions:**
+    - `name` must not be null (enforced by NullAway at compile-time) or blank (validated by superclass)
     - `description` may be null
     - `preparation` may be null (validated by superclass)
     - `notes` may be null (validated by superclass)
-  - **Throws:** `IllegalArgumentException` if name is null or blank
+  - **Throws:** `IllegalArgumentException` if name is blank (null is prevented by NullAway)
   - **Postconditions:** Creates a vague ingredient with name, description, preparation, and notes
 
 **Methods:**
@@ -433,14 +445,14 @@ Write tests to verify constructor validation for required vs. optional parameter
     - Name + description + preparation: `"{name} ({description}), {preparation}"` (e.g., "pepper (freshly ground), coarsely chopped")
 
 **Testing (`VagueIngredientTest.java`):**
-Write tests to verify constructor validation and string trimming behavior. Test `toString()`.
+Write tests to verify constructor validation for the `name` parameter (blank strings)—you do NOT need to test null `name` since NullAway prevents this at compile-time. Also test string trimming behavior and `toString()`.
 
 ### 5.4 Design Requirements
 
 - Use proper access modifiers: fields should be `private`, constructors `public` (except `Ingredient` and `Quantity` constructors which should be `protected`)
 - Make all fields `final` to ensure immutability (except for the `DECIMAL_PRECISION` constants which should be `public static final`)
 - Follow Java naming conventions (classes are PascalCase, methods are camelCase, constants are UPPER_SNAKE_CASE)
-- Add comprehensive Javadoc comments for all public classes, constructors, and methods
+- Add comprehensive Javadoc comments for all public classes, constructors, and methods (except in test classes)
 - Document all parameters, return values, exceptions, preconditions, and postconditions
 - Trim all string inputs in constructors to remove leading/trailing whitespace
 - Use proper encapsulation: no mutable objects should be exposed through getters
@@ -462,10 +474,10 @@ Brief testing guidance is provided after each class specification above. Each cl
 
 When designing tests, ask yourself:
 - What are the **valid inputs** based on the preconditions? Test representative examples.
-- What are the **invalid inputs** that should throw exceptions? Test boundary cases and violations.
+- What are the **invalid inputs** that should throw exceptions? Test boundary cases and violations. **Important:** Do NOT test for null on `@NonNull` parameters—NullAway prevents this at compile-time, so these tests are unnecessary and cannot be meaningfully written.
 - What are the **edge cases** (e.g., exactly 1.0, zero values, empty strings)? These often reveal bugs.
 - What are the **different code paths** in complex methods like `toString()`? Each branch needs testing.
-- For calculations, are the **mathematical results correct**? Use appropriate precision for floating-point comparisons. 
+- For calculations, are the **mathematical results correct**? Use appropriate precision for floating-point comparisons.
 
 **Note on exception testing:** The specification does not prescribe specific error messages for `IllegalArgumentException`. Your tests should verify that the correct exception type is thrown (using `assertThrows`), but should not assert on the exception message content.
 
@@ -493,7 +505,7 @@ Update the file `REFLECTION.md` in the root of your repository to include a 1-5 
 
 
 ### 6.1 Reflection Grading
-Your reflection should include 1-5 sentences for each of the questions above. Answers should be answered to the best of your ability, and reference your code submission. Up to 2 points will be deducted for each question that is omitted or answered incompletely.
+Your reflection should include 1-5 sentences for each of the questions above. Answers should be answered to the best of your ability, and reference your code submission. The reflection is worth up to 12 points and is graded additively. Points are awarded based on the completeness and thoughtfulness of your responses to each question.
 
 ## 7. Quality Requirements
 
@@ -512,13 +524,15 @@ Within the automated grading script, you will be awarded points for:
 - 50 points for implementation correctness
 - 50 points for test suite effectiveness
 
+**Total automated points: 88 points**
+
 Your implementation's correctness is evaluated by running your code against the instructor's test suite. Your test suite's effectiveness is evaluated by running your test suite against the instructor's reference implementation and a suite of buggy implementations of the same unit that have been intentionally modified to contain bugs.
 
 For each of the units that you are tasked with implementing, you will only receive marks for the implementation of that unit if you **also** have included at least one test for that unit that detects a plausible bug in the implementation of that unit **and** all of your tests pass on the reference implementation of that unit.
 
 Marks for tests are awarded per-fault (detect 2/5 faults and get 2/5 of the points for that unit), while marks for implementation are awarded "all or nothing" (get 100% of the points for that unit if your implementation is correct, 0% if any test fails). The grading script is configured to provide you with up to one hint on each submission for a bug that your test suite did not detect. It is also configured to provide you with up to one hint on each submission for a bug in your implementation that was detected by the instructor's test suite. With a maximum of 5 submissions per 24 hours, you should plan your efforts carefully.
 
-### 8.2 Automated Grading Point Breakdown (100 points)
+### 8.2 Automated Grading Point Breakdown (88 points)
 
 #### 8.2.1 Implementation Correctness (50 points)
 
@@ -548,7 +562,7 @@ Your tests are evaluated using mutation testing—we introduce small bugs into c
 **Note:** Your code must compile for any automated points to be awarded. Non-compiling submissions receive 0 points from automated grading.
 
 ### 8.3 Manual Grading (Subtractive)
-Manual grading will be *subtractive*. A maximum of 30 points can be deducted from your score by manual grading on your code and test suite. A maximum of 10 points may be deducted from your score by manual grading on your reflection.
+Manual grading will be *subtractive*. A maximum of 30 points can be deducted from your score by manual grading on your code and test suite.
 
 Manual grading reviews code quality attributes. Points will be deducted for deficiencies in the following areas:
 
@@ -556,7 +570,7 @@ Manual grading reviews code quality attributes. Points will be deducted for defi
 |----------|---------------|----------|
 | **Inheritance & Polymorphism** | -10 | Inappropriate use of inheritance; code duplication instead of reuse; incorrect use of abstract classes; missing or improper @Override annotations |
 | **Encapsulation** | -6 | Non-private fields; mutable objects exposed through getters; missing `final` modifiers on fields; improper access modifiers on constructors |
-| **Documentation** | -4 | Missing or incomplete Javadoc; missing @param, @return, @throws tags |
+| **Documentation** | -4 | Missing or incomplete Javadoc for non-test classes; missing @param, @return, @throws tags |
 | **Test Quality** | -6 | Excessive trivial tests (e.g., testing simple getters); redundant tests; tests that don't verify meaningful behavior |
 | **Code Style** | -4 | Poor naming; overly complex logic; missing string trimming; improper exception messages |
 
@@ -565,10 +579,15 @@ Manual grading reviews code quality attributes. Points will be deducted for defi
 Your final grade is calculated as:
 
 ```
-Final Score = Automated Score − Manual Deductions
+Final Score = Automated Score + Reflection Score − Manual Deductions
 ```
 
-When you submit your assignment, the automated score will be shown. The manual deductions will only be applied after the assignment is graded by the staff.
+Where:
+- **Automated Score**: Up to 88 points from automated grading (implementation correctness + test suite effectiveness)
+- **Reflection Score**: Up to 12 points from reflection grading (additive, manually graded)
+- **Manual Deductions**: Up to 30 points deducted for code quality issues (subtractive, manually graded)
+
+When you submit your assignment, the automated score will be shown. The reflection score and manual deductions will only be applied after the assignment is graded by the staff.
 
 ## 9. Submission
 
